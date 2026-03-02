@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexEvo â Il Fotovoltaico che Conviene Davvero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:#000000;color:#FFFFFF;font-family:'Inter',system-ui,-apple-system,sans-serif;overflow-x:hidden;cursor:none}
+
+/* âââ CUSTOM CURSOR âââ */
+#cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;background:#B3FE85;border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:transform .1s ease,background .2s ease;mix-blend-mode:difference}
+#cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid rgba(179,254,133,0.6);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .18s cubic-bezier(.25,.46,.45,.94),width .2s ease,height .2s ease,border-color .2s ease}
+body:has(a:hover) #cursor-dot,body:has(button:hover) #cursor-dot{transform:translate(-50%,-50%) scale(2.5);background:#B3FE85}
+body:has(a:hover) #cursor-ring,body:has(button:hover) #cursor-ring{width:56px;height:56px;border-color:rgba(179,254,133,0.9)}
+
+/* âââ CANVAS SETUP âââ */
+#canvas-main{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#canvas-bloom{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;mix-blend-mode:screen;filter:blur(18px);opacity:.55}
+
+/* âââ NAVBAR âââ */
+#navbar{position:fixed;top:0;left:0;width:100%;z-index:1000;padding:0 clamp(24px,5vw,80px);display:flex;align-items:center;justify-content:space-between;height:72px;background:rgba(0,0,0,0.2);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(179,254,133,0.08);transition:background .3s ease}
+#navbar.scrolled{background:rgba(0,0,0,0.75)}
+.nav-logo{display:flex;align-items:center;gap:4px;font-size:1.35rem;font-weight:800;letter-spacing:-.02em;text-decoration:none;color:#fff}
+.nav-logo .accent{color:#B3FE85}
+.nav-links{display:flex;align-items:center;gap:clamp(16px,3vw,40px)}
+.nav-links a{color:rgba(255,255,255,.75);text-decoration:none;font-size:.9rem;font-weight:500;letter-spacing:.01em;transition:color .2s ease;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1.5px;background:#B3FE85;transition:width .25s ease}
+.nav-links a:hover{color:#fff}
+.nav-links a:hover::after{width:100%}
+.btn-cta-nav{background:#B3FE85;color:#000;font-weight:700;font-size:.875rem;padding:10px 22px;border-radius:50px;border:none;cursor:none;letter-spacing:.01em;transition:transform .2s ease,box-shadow .2s ease,background .2s ease;white-space:nowrap}
+.btn-cta-nav:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(179,254,133,.4);background:#c8ff9e}
+.nav-mobile-toggle{display:none;flex-direction:column;gap:5px;cursor:none;padding:4px}
+.nav-mobile-toggle span{display:block;width:24px;height:2px;background:#fff;border-radius:2px;transition:transform .3s ease,opacity .3s ease}
+
+/* âââ SECTIONS BASE âââ */
+.section{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{width:100%;max-width:1200px;margin:0 auto;padding:0 clamp(24px,5vw,80px)}
+
+/* âââ SECTION 1 â HERO âââ */
+#hero{min-height:100vh;padding-top:72px;flex-direction:column;text-align:center;justify-content:center;overflow:hidden}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(179,254,133,.1);border:1px solid rgba(179,254,133,.25);border-radius:50px;padding:6px 16px;font-size:.8rem;font-weight:600;color:#B3FE85;letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;animation:fadeSlideUp .8s ease both .2s}
+.hero-eyebrow::before{content:'';width:6px;height:6px;background:#B3FE85;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero-title{font-size:clamp(2.6rem,7vw,6.5rem);font-weight:900;line-height:1.05;letter-spacing:-.04em;margin-bottom:24px;animation:fadeSlideUp .9s ease both .35s}
+.hero-title .lime{color:#B3FE85}
+.hero-title .line-break{display:block}
+.hero-subtitle{font-size:clamp(1rem,2.2vw,1.35rem);color:rgba(255,255,255,.65);font-weight:400;max-width:560px;margin:0 auto 44px;line-height:1.65;animation:fadeSlideUp .9s ease both .5s}
+.hero-cta-group{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;animation:fadeSlideUp .9s ease both .65s}
+.btn-primary{background:#B3FE85;color:#000;font-family:inherit;font-weight:700;font-size:1rem;padding:16px 36px;border-radius:50px;border:none;cursor:none;letter-spacing:.01em;transition:transform .2s ease,box-shadow .25s ease,background .2s ease;display:inline-flex;align-items:center;gap:10px}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(179,254,133,.45);background:#c8ff9e}
+.btn-primary svg{transition:transform .2s ease}
+.btn-primary:hover svg{transform:translateX(4px)}
+.btn-secondary{background:transparent;color:#fff;font-family:inherit;font-weight:600;font-size:1rem;padding:15px 32px;border-radius:50px;border:1.5px solid rgba(255,255,255,.25);cursor:none;letter-spacing:.01em;transition:border-color .2s ease,background .2s ease,transform .2s ease;display:inline-flex;align-items:center;gap:10px}
+.btn-secondary:hover{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.05);transform:translateY(-2px)}
+.hero-scroll-hint{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.5;animation:fadeSlideUp 1s ease both 1.1s}
+.hero-scroll-hint span{font-size:.75rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.scroll-line{width:1px;height:48px;background:linear-gradient(to bottom,rgba(179,254,133,.8),transparent);animation:scrollPulse 2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{transform:scaleY(1);opacity:.5}50%{transform:scaleY(.6);opacity:1}}
+.hero-stats-bar{display:flex;align-items:center;justify-content:center;gap:clamp(24px,5vw,64px);flex-wrap:wrap;margin-top:clamp(48px,8vh,80px);padding:24px 0;border-top:1px solid rgba(255,255,255,.07);animation:fadeSlideUp .9s ease both .8s}
+.hero-stat{text-align:center}
+.hero-stat .val{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:800;color:#B3FE85;letter-spacing:-.03em}
+.hero-stat .lbl{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:500;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+/* âââ SECTION 2 â COME FUNZIONA âââ */
+#come-funziona{background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(10,10,10,.98) 15%,rgba(10,10,10,.98) 85%,rgba(0,0,0,0) 100%);padding:120px 0}
+.section-label{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#B3FE85;margin-bottom:16px}
+.section-title{font-size:clamp(2rem,5vw,3.8rem);font-weight:800;line-height:1.1;letter-spacing:-.035em;margin-bottom:16px}
+.section-subtitle{font-size:clamp(.9rem,1.8vw,1.15rem);color:rgba(255,255,255,.55);max-width:520px;line-height:1.7}
+.steps-header{text-align:center;margin-bottom:72px}
+.steps-header .section-subtitle{margin:0 auto}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,3vw,40px)}
+.step-card{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:24px;padding:clamp(28px,4vw,44px);transition:border-color .3s ease,transform .3s ease,background .3s ease;overflow:hidden}
+.step-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 0%,rgba(179,254,133,.06) 0%,transparent 65%);opacity:0;transition:opacity .3s ease}
+.step-card:hover{border-color:rgba(179,254,133,.3);transform:translateY(-6px);background:rgba(255,255,255,.055)}
+.step-card:hover::before{opacity:1}
+.step-number{font-size:.75rem;font-weight:800;letter-spacing:.1em;color:rgba(179,254,133,.5);text-transform:uppercase;margin-bottom:20px}
+.step-icon{width:56px;height:56px;background:rgba(179,254,133,.1);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;transition:background .3s ease}
+.step-card:hover .step-icon{background:rgba(179,254,133,.18)}
+.step-icon svg{color:#B3FE85}
+.step-title{font-size:1.25rem;font-weight:700;margin-bottom:12px;letter-spacing:-.02em}
+.step-desc{font-size:.9rem;color:rgba(255,255,255,.55);line-height:1.7}
+.step-connector{display:none}
+
+/* âââ SECTION 3 â RISPARMIO âââ */
+#risparmio{padding:120px 0;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(5,5,5,.99) 10%,rgba(5,5,5,.99) 90%,rgba(0,0,0,0) 100%)}
+.risparmio-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,100px);align-items:center}
+.risparmio-left .section-subtitle{margin-bottom:40px}
+.counter-hero{display:flex;flex-direction:column;align-items:flex-start;margin:32px 0 40px}
+.counter-amount{font-size:clamp(4rem,10vw,8rem);font-weight:900;letter-spacing:-.05em;color:#B3FE85;line-height:1;text-shadow:0 0 80px rgba(179,254,133,.3)}
+.counter-label{font-size:clamp(.9rem,1.5vw,1.1rem);color:rgba(255,255,255,.5);font-weight:500;margin-top:8px;letter-spacing:.02em}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.06);border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.stat-card{background:#050505;padding:clamp(20px,3vw,32px);transition:background .25s ease}
+.stat-card:hover{background:rgba(179,254,133,.04)}
+.stat-card:first-child{border-radius:19px 0 0 0}
+.stat-card:nth-child(2){border-radius:0 19px 0 0}
+.stat-card:nth-child(3){border-radius:0 0 0 19px}
+.stat-card:last-child{border-radius:0 0 19px 0}
+.stat-val{font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;color:#fff;letter-spacing:-.04em;margin-bottom:4px}
+.stat-val span{color:#B3FE85}
+.stat-name{font-size:.8rem;color:rgba(255,255,255,.45);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.risparmio-right{position:relative}
+.chart-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:24px;padding:32px;position:relative;overflow:hidden}
+.chart-card::after{content:'';position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(179,254,133,.12) 0%,transparent 70%);pointer-events:none}
+.chart-title{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:24px}
+.chart-bars{display:flex;align-items:flex-end;gap:12px;height:160px}
+.chart-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+.chart-bar{width:100%;border-radius:8px 8px 0 0;transition:height .5s cubic-bezier(.34,1.56,.64,1)}
+.chart-bar.before{background:rgba(255,255,255,.12)}
+.chart-bar.after{background:linear-gradient(180deg,#B3FE85 0%,rgba(179,254,133,.5) 100%)}
+.chart-bar-label{font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500;white-space:nowrap}
+.chart-legend{display:flex;gap:20px;margin-top:20px;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.78rem;color:rgba(255,255,255,.5)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.legend-dot.before{background:rgba(255,255,255,.25)}
+.legend-dot.after{background:#B3FE85}
+
+/* âââ SECTION 4 â PREVENTIVO âââ */
+#preventivo{padding:120px 0;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(8,8,8,.99) 10%,rgba(8,8,8,.99) 90%,rgba(0,0,0,0) 100%)}
+.preventivo-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,100px);align-items:start}
+.preventivo-left .section-subtitle{margin-bottom:32px}
+.trust-list{display:flex;flex-direction:column;gap:14px;margin-top:36px}
+.trust-item{display:flex;align-items:center;gap:14px;font-size:.9rem;color:rgba(255,255,255,.65)}
+.trust-icon{width:32px;height:32px;background:rgba(179,254,133,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trust-icon svg{color:#B3FE85}
+.preventivo-form{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:28px;padding:clamp(28px,4vw,48px)}
+.form-title{font-size:1.4rem;font-weight:700;margin-bottom:8px;letter-spacing:-.02em}
+.form-subtitle{font-size:.88rem;color:rgba(255,255,255,.5);margin-bottom:28px;line-height:1.6}
+.form-group{margin-bottom:18px}
+.form-label{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;display:block}
+.form-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-family:inherit;font-size:.95rem;outline:none;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease;cursor:text}
+.form-input::placeholder{color:rgba(255,255,255,.3)}
+.form-input:focus{border-color:rgba(179,254,133,.5);background:rgba(179,254,133,.03);box-shadow:0 0 0 3px rgba(179,254,133,.08)}
+.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,.4)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn-form{width:100%;background:#B3FE85;color:#000;font-family:inherit;font-weight:700;font-size:1rem;padding:16px 24px;border-radius:14px;border:none;cursor:none;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .2s ease,box-shadow .25s ease,background .2s ease;margin-top:8px}
+.btn-form:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(179,254,133,.4);background:#c8ff9e}
+.form-privacy{font-size:.75rem;color:rgba(255,255,255,.3);text-align:center;margin-top:14px;line-height:1.5}
+.form-privacy a{color:rgba(179,254,133,.6);text-decoration:none}
+.trust-badges{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06)}
+.trust-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:50px;padding:6px 14px;font-size:.75rem;color:rgba(255,255,255,.5);font-weight:500}
+.trust-badge svg{color:#B3FE85}
+
+/* âââ SECTION 5 â FOOTER âââ */
+#footer{background:#000;border-top:1px solid rgba(255,255,255,.06);padding:80px 0 40px;min-height:auto}
+.footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:clamp(24px,4vw,64px);margin-bottom:64px}
+.footer-brand .logo-big{font-size:2rem;font-weight:900;letter-spacing:-.03em;margin-bottom:14px;display:block;text-decoration:none}
+.footer-brand .logo-big .accent{color:#B3FE85}
+.footer-tagline{font-size:.9rem;color:rgba(255,255,255,.45);line-height:1.7;max-width:260px;margin-bottom:24px}
+.footer-social{display:flex;gap:10px}
+.social-btn{width:38px;height:38px;background:rgba(255,255,255,.05);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.08);transition:background .2s ease,border-color .2s ease;text-decoration:none;cursor:none}
+.social-btn:hover{background:rgba(179,254,133,.1);border-color:rgba(179,254,133,.3)}
+.social-btn svg{color:rgba(255,255,255,.5);transition:color .2s ease}
+.social-btn:hover svg{color:#B3FE85}
+.footer-col h4{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:18px}
+.footer-col ul{list-style:none}
+.footer-col ul li{margin-bottom:10px}
+.footer-col ul li a{color:rgba(255,255,255,.6);text-decoration:none;font-size:.9rem;transition:color .2s ease}
+.footer-col ul li a:hover{color:#B3FE85}
+.footer-col p{font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.8}
+.footer-col p a{color:rgba(255,255,255,.6);text-decoration:none;transition:color .2s ease}
+.footer-col p a:hover{color:#B3FE85}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:28px;border-top:1px solid rgba(255,255,255,.06)}
+.footer-copy{font-size:.78rem;color:rgba(255,255,255,.3)}
+.footer-legal{display:flex;gap:20px}
+.footer-legal a{font-size:.78rem;color:rgba(255,255,255,.3);text-decoration:none;transition:color .2s ease}
+.footer-legal a:hover{color:rgba(255,255,255,.6)}
+
+/* âââ DIVIDERS / GLOWS âââ */
+.section-glow{position:absolute;pointer-events:none;border-radius:50%;filter:blur(100px);opacity:.12}
+.glow-green{background:#B3FE85}
+.glow-white{background:#ffffff}
+
+/* âââ ANIMATIONS âââ */
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+
+/* âââ HIGHLIGHT LINE âââ */
+.lime{color:#B3FE85}
+.highlight-underline{position:relative;display:inline-block}
+.highlight-underline::after{content:'';position:absolute;bottom:4px;left:0;width:100%;height:3px;background:linear-gradient(90deg,#B3FE85,rgba(179,254,133,.4));border-radius:2px}
+
+/* âââ NOISE OVERLAY âââ */
+.noise-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
+
+/* âââ SCROLLBAR âââ */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(179,254,133,.3);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:rgba(179,254,133,.6)}
+
+/* âââ RESPONSIVE âââ */
+@media(max-width:900px){
+  .steps-grid{grid-template-columns:1fr}
+  .risparmio-inner,.preventivo-inner{grid-template-columns:1fr}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .nav-links,.btn-cta-nav{display:none}
+  .nav-mobile-toggle{display:flex}
+}
+@media(max-width:600px){
+  .footer-top{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr}
+  .hero-stats-bar{gap:24px}
+  .footer-bottom{flex-direction:column;align-items:flex-start}
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r158/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- NOISE OVERLAY -->
+<div class="noise-overlay"></div>
+
+<!-- DUAL CANVAS -->
+<canvas id="canvas-main"></canvas>
+<canvas id="canvas-bloom"></canvas>
+
+<!-- âââââââââââââââââââââââââââââââ NAVBAR âââââââââââââââââââââââââââââââ -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <span class="accent">&gt;E</span>&nbsp;NexEvo
+  </a>
+  <div class="nav-links">
+    <a href="#come-funziona">Come Funziona</a>
+    <a href="#risparmio">Risparmio</a>
+    <a href="#preventivo">Preventivo</a>
+  </div>
+  <button class="btn-cta-nav" onclick="document.getElementById('preventivo').scrollIntoView({behavior:'smooth'})">Preventivo Gratuito</button>
+  <div class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- âââââââââââââââââââââââââââââââ SECTION 1 â HERO âââââââââââââââââââââââââââââââ -->
+<section class="section" id="hero">
+  <div class="section-glow glow-green" style="width:600px;height:600px;top:-100px;left:50%;transform:translateX(-50%)"></div>
+  <div class="container" style="position:relative;z-index:2">
+    <div class="hero-eyebrow">â¡ Energia solare intelligente</div>
+    <h1 class="hero-title">
+      Il fotovoltaico che
+      <span class="line-break lime">conviene davvero</span>
+    </h1>
+    <p class="hero-subtitle">Risparmia fino al 70% sulla bolletta elettrica con i nostri impianti di ultima generazione. Zero anticipo, massima resa.</p>
+    <div class="hero-cta-group">
+      <button class="btn-primary" onclick="document.getElementById('preventivo').scrollIntoView({behavior:'smooth'})">
+        Calcola il tuo risparmio
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <button class="btn-secondary" onclick="document.getElementById('come-funziona').scrollIntoView({behavior:'smooth'})">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>
+        Come funziona
+      </button>
+    </div>
+    <div class="hero-stats-bar">
+      <div class="hero-stat"><div class="val">+10.000</div><div class="lbl">Famiglie servite</div></div>
+      <div class="hero-stat"><div class="val">70%</div><div class="lbl">Risparmio medio</div></div>
+      <div class="hero-stat"><div class="val">4.8â</div><div class="lbl">Trustpilot</div></div>
+      <div class="hero-stat"><div class="val">25 anni</div><div class="lbl">Garanzia</div></div>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scorri</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- âââââââââââââââââââââââââââââââ SECTION 2 â COME FUNZIONA âââââââââââââââââââââââââââââââ -->
+<section class="section" id="come-funziona">
+  <div class="container">
+    <div class="steps-header reveal">
+      <div class="section-label">Come Funziona</div>
+      <h2 class="section-title">Tre passi verso il risparmio</h2>
+      <p class="section-subtitle">Dall'analisi del tuo tetto all'installazione completa, seguiamo ogni fase con il massimo della professionalitÃ .</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-number">01 â Preventivo</div>
+        <div class="step-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        </div>
+        <h3 class="step-title">Preventivo gratuito in 2 min</h3>
+        <p class="step-desc">Inserisci il tuo indirizzo e la bolletta media mensile. Il nostro sistema calcola istantaneamente il risparmio stimato per la tua abitazione, senza impegno.</p>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-number">02 â Sopralluogo</div>
+        <div class="step-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <h3 class="step-title">Sopralluogo tecnico</h3>
+        <p class="step-desc">Il nostro team di esperti visita la tua abitazione per valutare l'orientamento del tetto, le ombre e la struttura, garantendo un progetto su misura perfetto.</p>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-number">03 â Installazione</div>
+        <div class="step-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </div>
+        <h3 class="step-title">Installazione in 30 giorni</h3>
+        <p class="step-desc">Dal contratto al primo kilowatt prodotto, ci impegniamo a completare l'installazione in soli 30 giorni. Nessun burocrazia, pensiamo noi a tutto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- âââââââââââââââââââââââââââââââ SECTION 3 â RISPARMIO âââââââââââââââââââââââââââââââ -->
+<section class="section" id="risparmio">
+  <div class="section-glow glow-green" style="width:500px;height:500px;bottom:-100px;right:-100px;opacity:.08"></div>
+  <div class="container">
+    <div class="risparmio-inner">
+      <div class="risparmio-left reveal">
+        <div class="section-label">Il tuo risparmio</div>
+        <h2 class="section-title">Numeri che parlano <span class="lime">chiaro</span></h2>
+        <p class="section-subtitle">Il fotovoltaico non Ã¨ piÃ¹ un lusso. Ã un investimento concreto che si ripaga in pochi anni e genera guadagno per decenni.</p>
+        <div class="counter-hero">
+          <div class="counter-amount" id="counter-val">â¬0</div>
+          <div class="counter-label">risparmio annuo medio stimato</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val">+10<span>.000</span></div>
+            <div class="stat-name">Famiglie servite</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">4.8<span>/5</span></div>
+            <div class="stat-name">Trustpilot</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">30<span> gg</span></div>
+            <div class="stat-name">Installazione</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">25<span> anni</span></div>
+            <div class="stat-name">Garanzia</div>
+          </div>
+        </div>
+      </div>
+      <div class="risparmio-right reveal reveal-delay-2">
+        <div class="chart-card">
+          <div class="chart-title">Bolletta media mensile â Prima vs Dopo</div>
+          <div class="chart-bars">
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" id="bar-gen-before" style="height:80%"></div>
+              <div class="chart-bar-label">Gen</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" id="bar-gen-after" style="height:28%"></div>
+              <div class="chart-bar-label">Gen</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" style="height:75%"></div>
+              <div class="chart-bar-label">Mar</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" style="height:18%"></div>
+              <div class="chart-bar-label">Mar</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" style="height:70%"></div>
+              <div class="chart-bar-label">Mag</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" style="height:8%"></div>
+              <div class="chart-bar-label">Mag</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" style="height:90%"></div>
+              <div class="chart-bar-label">Lug</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" style="height:5%"></div>
+              <div class="chart-bar-label">Lug</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" style="height:85%"></div>
+              <div class="chart-bar-label">Set</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" style="height:12%"></div>
+              <div class="chart-bar-label">Set</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar before" style="height:78%"></div>
+              <div class="chart-bar-label">Nov</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar after" style="height:30%"></div>
+              <div class="chart-bar-label">Nov</div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot before"></div>Prima</div>
+            <div class="legend-item"><div class="legend-dot after"></div>Con NexEvo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- âââââââââââââââââââââââââââââââ SECTION 4 â PREVENTIVO âââââââââââââââââââââââââââââââ -->
+<section class="section" id="preventivo">
+  <div class="container">
+    <div class="preventivo-inner">
+      <div class="preventivo-left reveal">
+        <div class="section-label">Preventivo Gratuito</div>
+        <h2 class="section-title">Scopri quanto <span class="lime">risparmi</span> davvero</h2>
+        <p class="section-subtitle">Nessuna visita commerciale, nessun impegno. Solo numeri reali basati sul tuo consumo e sulla tua zona geografica.</p>
+        <div class="trust-list">
+          <div class="trust-item">
+            <div class="trust-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Preventivo personalizzato in meno di 2 minuti
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Zero anticipo, finanziamento a tasso agevolato
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Installazione in 30 giorni garantita
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Assistenza post-vendita 25 anni
+          </div>
+        </div>
+      </div>
+      <div class="preventivo-right reveal reveal-delay-2">
+        <div class="preventivo-form">
+          <h3 class="form-title">Calcola il tuo risparmio</h3>
+          <p class="form-subtitle">Inserisci i dati della tua abitazione per ricevere una stima immediata e gratuita.</p>
+          <form id="preventivo-form" onsubmit="return false">
+            <div class="form-group">
+              <label class="form-label" for="address">Indirizzo</label>
+              <input class="form-input" type="text" id="address" name="address" placeholder="Via Roma 1, Milano" autocomplete="street-address">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="bill">Bolletta mensile</label>
+                <select class="form-input form-select" id="bill" name="bill">
+                  <option value="">Seleziona</option>
+                  <option>&lt; â¬50</option>
+                  <option>â¬50 â â¬100</option>
+                  <option>â¬100 â â¬150</option>
+                  <option>â¬150 â â¬200</option>
+                  <option>&gt; â¬200</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="roof">Tipo di tetto</label>
+                <select class="form-input form-select" id="roof" name="roof">
+                  <option value="">Seleziona</option>
+                  <option>Piano</option>
+                  <option>A falda</option>
+                  <option>Mansarda</option>
+                  <option>Terrazzo</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="name">Nome e Cognome</label>
+              <input class="form-input" type="text" id="name" name="name" placeholder="Mario Rossi" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phone">Telefono</label>
+              <input class="form-input" type="tel" id="phone" name="phone" placeholder="+39 333 123 4567" autocomplete="tel">
+            </div>
+            <button type="submit" class="btn-form">
+              Calcola il tuo risparmio
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <p class="form-privacy">Inviando accetti la nostra <a href="#">Privacy Policy</a>. Non condividiamo i tuoi dati con terze parti.</p>
+          </form>
+          <div class="trust-badges">
+            <div class="trust-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SSL Sicuro</div>
+            <div class="trust-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> 10.000+ clienti</div>
+            <div class="trust-badge"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 4.8 Trustpilot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- âââââââââââââââââââââââââââââââ SECTION 5 â FOOTER âââââââââââââââââââââââââââââââ -->
+<footer class="section" id="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="logo-big"><span class="accent">&gt;E</span> NexEvo</a>
+        <p class="footer-tagline">L'energia del sole al servizio delle famiglie italiane. QualitÃ , affidabilitÃ  e risparmio reale dal 2015.</p>
+        <div class="footer-social">
+          <a href="#" class="social-btn" aria-label="Facebook">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </a>
+          <a href="#" class="social-btn" aria-label="Instagram">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="#" class="social-btn" aria-label="LinkedIn">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Prodotti</h4>
+        <ul>
+          <li><a href="#">Pannelli Fotovoltaici</a></li>
+          <li><a href="#">Sistemi di Accumulo</a></li>
+          <li><a href="#">Pompe di Calore</a></li>
+          <li><a href="#">Colonnine EV</a></li>
+          <li><a href="#">Monitoraggio App</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Azienda</h4>
+        <ul>
+          <li><a href="#">Chi siamo</a></li>
+          <li><a href="#">Come funziona</a></li>
+          <li><a href="#">Recensioni</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Lavora con noi</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contatti</h4>
+        <p>
+          <a href="mailto:info@nexevo.it">info@nexevo.it</a><br>
+          <a href="tel:+390212345678">+39 02 1234 5678</a><br><br>
+          Via dell'Innovazione 42<br>
+          20100 Milano, Italia
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">Â© 2024 NexEvo S.r.l. â P.IVA 12345678901 â Tutti i diritti riservati</p>
+      <div class="footer-legal">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Termini di servizio</a>
+        <a href="#">Cookie Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // âââ GSAP SETUP âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  gsap.registerPlugin(ScrollTrigger);
+
+  // âââ MOBILE DETECTION ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
+  const PARTICLE_COUNT = isMobile ? 15000 : 60000;
+
+  // âââ CANVAS SETUP ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const mainCanvas = document.getElementById('canvas-main') || (function() {
+    const c = document.createElement('canvas');
+    c.id = 'three-canvas';
+    c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;';
+    document.body.prepend(c);
+    return c;
+  }());
+
+  const bloomCanvas = document.getElementById('canvas-bloom') || (function() {
+    const c = document.createElement('canvas');
+    c.id = 'bloom-canvas';
+    c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;filter:blur(18px);opacity:0.45;mix-blend-mode:screen;';
+    document.body.prepend(c);
+    return c;
+  }());
+
+  // âââ CURSOR DOM ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const cursorDot = document.getElementById('cursor-dot') || (function() {
+    const el = document.createElement('div');
+    el.id = 'cursor-dot';
+    el.style.cssText = 'position:fixed;width:8px;height:8px;background:#B3FE85;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:background 0.2s;';
+    document.body.appendChild(el);
+    return el;
+  }());
+
+  const cursorRing = document.getElementById('cursor-ring') || (function() {
+    const el = document.createElement('div');
+    el.id = 'cursor-ring';
+    el.style.cssText = 'position:fixed;width:36px;height:36px;border:2px solid #B3FE85;border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0.7;';
+    document.body.appendChild(el);
+    return el;
+  }());
+
+  // âââ RENDERERS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const renderer = new THREE.WebGLRenderer({ canvas: mainCanvas, antialias: !isMobile, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+
+  const bloomRenderer = new THREE.WebGLRenderer({ canvas: bloomCanvas, antialias: false, alpha: true });
+  bloomRenderer.setPixelRatio(0.5);
+  bloomRenderer.setSize(window.innerWidth, window.innerHeight);
+  bloomRenderer.setClearColor(0x000000, 0);
+
+  // âââ SCENE & CAMERA ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const scene = new THREE.Scene();
+  const bloomScene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 2, 12);
+
+  const bloomCamera = camera.clone();
+
+  // âââ CUSTOM LIGHTING âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const ambientLight = new THREE.AmbientLight(0x0a0a1a, 1.2);
+  scene.add(ambientLight);
+
+  const sunLight = new THREE.DirectionalLight(0xB3FE85, 2.5);
+  sunLight.position.set(0, 8, -10);
+  scene.add(sunLight);
+
+  const rimLight = new THREE.DirectionalLight(0x2244ff, 0.8);
+  rimLight.position.set(-5, 2, 5);
+  scene.add(rimLight);
+
+  // âââ SOLAR PANEL SHADER ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const panelVertShader = `
+    precision highp float;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    varying vec2 vUv;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const panelFragShader = `
+    precision highp float;
+    uniform float uTime;
+    uniform float uFresnelIntensity;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    varying vec2 vUv;
+
+    void main() {
+      vec3 viewDir = normalize(-vPosition);
+      float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 3.0);
+      fresnel *= uFresnelIntensity;
+
+      // Grid cell pattern
+      vec2 grid = fract(vUv * vec2(4.0, 3.0));
+      float gridLine = step(0.92, grid.x) + step(0.92, grid.y);
+      gridLine = clamp(gridLine, 0.0, 1.0);
+
+      // Iridescent shimmer
+      float angle = dot(vNormal, viewDir);
+      vec3 iridescent = vec3(
+        0.5 + 0.5 * sin(angle * 8.0 + uTime * 0.5),
+        0.5 + 0.5 * sin(angle * 8.0 + uTime * 0.5 + 2.094),
+        0.5 + 0.5 * sin(angle * 8.0 + uTime * 0.5 + 4.189)
+      ) * 0.12;
+
+      vec3 darkSurface = vec3(0.04, 0.06, 0.10);
+      vec3 baseColor = mix(darkSurface, darkSurface + iridescent, 0.6);
+      baseColor = mix(baseColor, vec3(0.08, 0.10, 0.14), gridLine * 0.8);
+
+      vec3 fresnelColor = vec3(0.702, 0.996, 0.522); // #B3FE85
+      vec3 finalColor = baseColor + fresnelColor * fresnel;
+
+      float alpha = mix(0.95, 1.0, fresnel);
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `;
+
+  // âââ BUILD SOLAR PANEL âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const panelGroup = new THREE.Group();
+  scene.add(panelGroup);
+
+  const panelMaterial = new THREE.ShaderMaterial({
+    vertexShader: panelVertShader,
+    fragmentShader: panelFragShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uFresnelIntensity: { value: 1.5 }
+    },
+    transparent: true,
+    side: THREE.FrontSide
+  });
+
+  const bloomPanelMaterial = panelMaterial.clone();
+  bloomPanelMaterial.uniforms = {
+    uTime: { value: 0 },
+    uFresnelIntensity: { value: 2.5 }
+  };
+
+  const cellGeo = new THREE.BoxGeometry(1.1, 0.72, 0.04);
+  const panelMeshes = [];
+  const bloomPanelGroup = new THREE.Group();
+  bloomScene.add(bloomPanelGroup);
+
+  const COLS = 4, ROWS = 3;
+  const cellSpacingX = 1.22, cellSpacingY = 0.82;
+  const offsetX = -(COLS - 1) * cellSpacingX * 0.5;
+  const offsetY = -(ROWS - 1) * cellSpacingY * 0.5;
+
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const cell = new THREE.Mesh(cellGeo, panelMaterial);
+      cell.position.set(offsetX + col * cellSpacingX, offsetY + row * cellSpacingY, 0);
+      panelGroup.add(cell);
+      panelMeshes.push(cell);
+
+      const bloomCell = new THREE.Mesh(cellGeo, bloomPanelMaterial);
+      bloomCell.position.copy(cell.position);
+      bloomPanelGroup.add(bloomCell);
+    }
+  }
+
+  // Frame
+  const frameGeo = new THREE.BoxGeometry(COLS * cellSpacingX + 0.3, ROWS * cellSpacingY + 0.3, 0.03);
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, metalness: 0.8, roughness: 0.3 });
+  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+  frameMesh.position.z = -0.03;
+  panelGroup.add(frameMesh);
+
+  panelGroup.position.set(3, 0, 0);
+  bloomPanelGroup.position.copy(panelGroup.position);
+  bloomPanelGroup.rotation.copy(panelGroup.rotation);
+
+  // âââ SUN SHADER ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const sunVertShader = `
+    precision highp float;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    void main() {
+      vUv = uv;
+      vNormal = normalize(normalMatrix * normal);
+      vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const sunFragShader = `
+    precision highp float;
+    uniform float uTime;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    float noise(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    void main() {
+      vec2 center = vUv - 0.5;
+      float dist = length(center);
+
+      // Radial gradient
+      float core = smoothstep(0.5, 0.0, dist);
+      float mid = smoothstep(0.5, 0.1, dist) * smoothstep(0.0, 0.2, dist);
+
+      // Corona rays
+      float angle = atan(center.y, center.x);
+      float rays = 0.0;
+      for(int i = 0; i < 8; i++) {
+        float a = float(i) * 0.7854;
+        rays += sin(angle * 6.0 + a + uTime * 0.8) * 0.5 + 0.5;
+      }
+      rays /= 8.0;
+      float corona = rays * smoothstep(0.5, 0.15, dist) * smoothstep(0.05, 0.3, dist);
+
+      // Pulse
+      float pulse = 0.95 + 0.05 * sin(uTime * 2.0);
+
+      vec3 white = vec3(1.0, 1.0, 0.95);
+      vec3 lime = vec3(0.702, 0.996, 0.522);
+      vec3 orange = vec3(1.0, 0.7, 0.2);
+
+      vec3 color = mix(lime, white, core * pulse);
+      color = mix(color, lime, corona * 0.6);
+      color += orange * smoothstep(0.3, 0.45, dist) * smoothstep(0.5, 0.35, dist) * 0.3;
+
+      float alpha = smoothstep(0.5, 0.1, dist) * pulse;
+      alpha = max(alpha, corona * 0.7 * smoothstep(0.55, 0.2, dist));
+
+      gl_FragColor = vec4(color, alpha);
+    }
+  `;
+
+  const sunGeo = new THREE.SphereGeometry(2, 64, 64);
+  const sunMat = new THREE.ShaderMaterial({
+    vertexShader: sunVertShader,
+    fragmentShader: sunFragShader,
+    uniforms: { uTime: { value: 0 } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.FrontSide
+  });
+  const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+  sunMesh.position.set(0, 8, -15);
+  scene.add(sunMesh);
+
+  // Bloom sun clone
+  const bloomSunMat = sunMat.clone();
+  bloomSunMat.uniforms = { uTime: { value: 0 } };
+  const bloomSun = new THREE.Mesh(sunGeo, bloomSunMat);
+  bloomSun.position.copy(sunMesh.position);
+  bloomScene.add(bloomSun);
+
+  // âââ PARTICLE SYSTEM âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const particleVertShader = `
+    precision highp float;
+    attribute float aSize;
+    attribute vec3 aVelocity;
+    attribute vec3 aTarget;
+    uniform float uTime;
+    uniform float uMorph;
+    varying vec3 vColor;
+
+    void main() {
+      vColor = vec3(0.702, 0.996, 0.522);
+      vec3 pos = mix(position, aTarget, uMorph);
+
+      // Flow animation when not morphed
+      if(uMorph < 0.99) {
+        float wave = sin(pos.x * 0.3 + uTime * 1.2) * 0.4;
+        float wave2 = cos(pos.z * 0.2 + uTime * 0.9) * 0.3;
+        pos.y += wave * (1.0 - uMorph);
+        pos.x += wave2 * (1.0 - uMorph);
+      }
+
+      vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+      gl_PointSize = aSize * (300.0 / -mvPosition.z);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const particleFragShader = `
+    precision highp float;
+    varying vec3 vColor;
+
+    void main() {
+      vec2 coord = gl_PointCoord - 0.5;
+      float dist = length(coord);
+      if(dist > 0.5) discard;
+      float alpha = smoothstep(0.5, 0.0, dist);
+      alpha *= alpha;
+      gl_FragColor = vec4(vColor, alpha * 0.85);
+    }
+  `;
+
+  const positions = new Float32Array(PARTICLE_COUNT * 3);
+  const velocities = new Float32Array(PARTICLE_COUNT * 3);
+  const sizes = new Float32Array(PARTICLE_COUNT);
+  const targets = new Float32Array(PARTICLE_COUNT * 3);
+
+  // âââ >E LOGO TARGET POSITIONS ââââââââââââââââââââââââââââââââââââââââââââââââ
+  function generateLogoPositions(count) {
+    const pts = [];
+    // ">" shape
+    for (let i = 0; i < count * 0.5; i++) {
+      const t = i / (count * 0.5);
+      if (t < 0.5) {
+        const s = t / 0.5;
+        pts.push(-3 + s * 1.5, -2 + s * 2, 0);
+      } else {
+        const s = (t - 0.5) / 0.5;
+        pts.push(-1.5 + s * (-1.5), 0 + s * (-2), 0);
+      }
+    }
+    // "E" shape
+    for (let i = 0; i < count * 0.5; i++) {
+      const t = i / (count * 0.5);
+      if (t < 0.25) {
+        const s = t / 0.25;
+        pts.push(0.5, -2 + s * 4, 0);
+      } else if (t < 0.5) {
+        const s = (t - 0.25) / 0.25;
+        pts.push(0.5 + s * 2, -2, 0);
+      } else if (t < 0.75) {
+        const s = (t - 0.5) / 0.25;
+        pts.push(0.5 + s * 1.5, 0, 0);
+      } else {
+        const s = (t - 0.75) / 0.25;
+        pts.push(0.5 + s * 2, 2, 0);
+      }
+    }
+    return pts;
+  }
+
+  const logoPoints = generateLogoPositions(PARTICLE_COUNT);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const i3 = i * 3;
+    // Start near sun area
+    const r = 3 + Math.random() * 8;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    positions[i3] = Math.sin(phi) * Math.cos(theta) * r;
+    positions[i3 + 1] = 6 + Math.random() * 6;
+    positions[i3 + 2] = -12 + Math.random() * 8;
+
+    velocities[i3] = (Math.random() - 0.5) * 0.02;
+    velocities[i3 + 1] = -0.01 - Math.random() * 0.02;
+    velocities[i3 + 2] = (Math.random() - 0.5) * 0.01;
+
+    sizes[i] = 1.0 + Math.random() * 2.0;
+
+    if (i * 3 < logoPoints.length) {
+      targets[i3] = logoPoints[i3] + (Math.random() - 0.5) * 0.3;
+      targets[i3 + 1] = logoPoints[i3 + 1] + (Math.random() - 0.5) * 0.3;
+      targets[i3 + 2] = (Math.random() - 0.5) * 0.5;
+    } else {
+      targets[i3] = (Math.random() - 0.5) * 8;
+      targets[i3 + 1] = (Math.random() - 0.5) * 5;
+      targets[i3 + 2] = (Math.random() - 0.5) * 2;
+    }
+  }
+
+  const particleGeo = new THREE.BufferGeometry();
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute('aVelocity', new THREE.BufferAttribute(velocities, 3));
+  particleGeo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+  particleGeo.setAttribute('aTarget', new THREE.BufferAttribute(targets, 3));
+
+  const particleMat = new THREE.ShaderMaterial({
+    vertexShader: particleVertShader,
+    fragmentShader: particleFragShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uMorph: { value: 0 }
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: false
+  });
+
+  const particles = new THREE.Points(particleGeo, particleMat);
+  scene.add(particles);
+
+  const bloomParticleMat = particleMat.clone();
+  bloomParticleMat.uniforms = { uTime: { value: 0 }, uMorph: { value: 0 } };
+  const bloomParticles = new THREE.Points(particleGeo, bloomParticleMat);
+  bloomScene.add(bloomParticles);
+
+  // âââ SCROLL STATE ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const state = {
+    morphProgress: 0,
+    cameraTargetZ: 12,
+    cameraTargetY: 2,
+    panelRotY: 0,
+    panelTilt: 0,
+    sceneOpacity: 1
+  };
+
+  // âââ GSAP SCROLL TRIGGERS ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+  // Section 1: Panels float in, sun rises
+  gsap.fromTo(panelGroup.position, { x: 12, y: -5 }, {
+    x: 3, y: 0,
+    scrollTrigger: { trigger: 'body', start: 'top top', end: '20% top', scrub: 1.5 }
+  });
+
+  gsap.fromTo(panelGroup.rotation, { y: -1.5 }, {
+    y: 0.2,
+    scrollTrigger: { trigger: 'body', start: 'top top', end: '20% top', scrub: 1.5 }
+  });
+
+  gsap.fromTo(sunMesh.position, { y: -5 }, {
+    y: 8,
+    scrollTrigger: { trigger: 'body', start: 'top top', end: '15% top', scrub: 2 }
+  });
+
+  // Section 1: Title text stagger in
+  const heroTitle = document.querySelector('.hero-title, h1, .section-1 h1');
+  if (heroTitle) {
+    gsap.from(heroTitle, {
+      opacity: 0, y: 60, duration: 1.4, ease: 'power3.out',
+      scrollTrigger: { trigger: heroTitle, start: 'top 85%' }
+    });
+  }
+
+  const heroSubtitle = document.querySelector('.hero-subtitle, .hero p, .section-1 p');
+  if (heroSubtitle) {
+    gsap.from(heroSubtitle, {
+      opacity: 0, y: 40, duration: 1.2, ease: 'power3.out', delay: 0.3,
+      scrollTrigger: { trigger: heroSubtitle, start: 'top 85%' }
+    });
+  }
+
+  // Section 2: Camera zoom, step cards
+  ScrollTrigger.create({
+    start: '20% top',
+    end: '40% top',
+    scrub: 2,
+    onUpdate: (self) => {
+      state.cameraTargetZ = 12 - self.progress * 4;
+      state.cameraTargetY = 2 - self.progress * 1;
+      state.panelRotY = 0.2 + self.progress * 0.4;
+    }
+  });
+
+  const stepCards = document.querySelectorAll('.step-card, .feature-card, .card, [data-step]');
+  stepCards.forEach((card, i) => {
+    gsap.from(card, {
+      opacity: 0, scale: 0.8, y: 50,
+      duration: 0.8, ease: 'back.out(1.7)',
+      delay: i * 0.15,
+      scrollTrigger: { trigger: card, start: 'top 80%' }
+    });
+  });
+
+  // Section 3: Counter + particle morph
+  ScrollTrigger.create({
+    start: '40% top',
+    end: '60% top',
+    scrub: 2,
+    onUpdate: (self) => {
+      particleMat.uniforms.uMorph.value = self.progress;
+      bloomParticleMat.uniforms.uMorph.value = self.progress;
+      state.morphProgress = self.progress;
+    }
+  });
+
+  // Counter animation
+  const counterEl = document.querySelector('.counter, [data-counter], .stat-number');
+  if (counterEl) {
+    const countObj = { val: 0 };
+    gsap.to(countObj, {
+      val: 1200, duration: 2.5, ease: 'power2.out',
+      onUpdate: () => { counterEl.textContent = Math.round(countObj.val).toLocaleString(); },
+      scrollTrigger: { trigger: counterEl, start: 'top 75%', once: true }
+    });
+  }
+
+  const statsCards = document.querySelectorAll('.stat-card, .stats .card, [data-stat]');
+  statsCards.forEach((card, i) => {
+    gsap.from(card, {
+      opacity: 0, scale: 0.85, duration: 0.7, ease: 'power2.out',
+      delay: i * 0.12,
+      scrollTrigger: { trigger: card, start: 'top 80%' }
+    });
+  });
+
+  // Section 4: Form parallax, panel tilt
+  ScrollTrigger.create({
+    start: '60% top',
+    end: '80% top',
+    scrub: 1.5,
+    onUpdate: (self) => {
+      state.panelTilt = self.progress * 0.5;
+      state.cameraTargetZ = 8 + self.progress * 2;
+    }
+  });
+
+  const formSection = document.querySelector('.form-section, form, .contact-section');
+  if (formSection) {
+    gsap.from(formSection, {
+      opacity: 0, y: 80, duration: 1.2, ease: 'power3.out',
+      scrollTrigger: { trigger: formSection, start: 'top 75%' }
+    });
+  }
+
+  // Section 5: Logo fully forms, scene fades
+  ScrollTrigger.create({
+    start: '80% top',
+    end: '95% top',
+    scrub: 1.5,
+    onUpdate: (self) => {
+      state.sceneOpacity = 1 - self.progress * 0.7;
+      mainCanvas.style.opacity = state.sceneOpacity;
+      bloomCanvas.style.opacity = state.sceneOpacity * 0.45;
+    }
+  });
+
+  // âââ CUSTOM CURSOR âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  const mouse = { x: 0, y: 0 };
+  const dotPos = { x: 0, y: 0 };
+  const ringPos = { x: 0, y: 0 };
+  const raycaster = new THREE.Raycaster();
+  const mouseNDC = new THREE.Vector2();
+  let isHoveringPanel = false;
+
+  if (!isMobile) {
+    document.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    document.body.style.cursor = 'none';
+  }
+
+  // âââ RESIZE HANDLER ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  let resizeTimeout;
+  function onResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      bloomCamera.aspect = w / h;
+      bloomCamera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      bloomRenderer.setSize(w, h);
+    }, 150);
+  }
+  window.addEventListener('resize', onResize);
+
+  // âââ SYNC BLOOM OBJECTS ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  function syncBloomObjects() {
+    bloomPanelGroup.position.copy(panelGroup.position);
+    bloomPanelGroup.rotation.copy(panelGroup.rotation);
+    bloomSun.position.copy(sunMesh.position);
+    bloomParticles.position.copy(particles.position);
+    bloomParticles.rotation.copy(particles.rotation);
+  }
+
+  // âââ ANIMATION LOOP ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  let animFrame;
+  let lastTime = 0;
+  const TARGET_FPS = 60;
+  const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
+  function animate(now) {
+    animFrame = requestAnimationFrame(animate);
+
+    const delta = now - lastTime;
+    if (delta < FRAME_INTERVAL - 1) return;
+    lastTime = now - (delta % FRAME_INTERVAL);
+
+    const t = now * 0.001;
+
+    // Update time uniforms
+    panelMaterial.uniforms.uTime.value = t;
+    bloomPanelMaterial.uniforms.uTime.value = t;
+    sunMat.uniforms.uTime.value = t;
+    bloomSunMat.uniforms.uTime.value = t;
+    particleMat.uniforms.uTime.value = t;
+    bloomParticleMat.uniforms.uTime.value = t;
+
+    // Panel rotation & float
+    panelGroup.rotation.y = state.panelRotY + Math.sin(t * 0.3) * 0.05;
+    panelGroup.rotation.x = state.panelTilt + Math.sin(t * 0.2) * 0.03;
+    panelGroup.position.y = state.panelTilt > 0.1
+      ? panelGroup.position.y
+      : Math.sin(t * 0.4) * 0.3;
+
+    // Sun slow rotation
+    sunMesh.rotation.y = t * 0.1;
+
+    // Camera smooth lerp
+    camera.position.z += (state.cameraTargetZ - camera.position.z) * 0.05;
+    camera.position.y += (state.cameraTargetY - camera.position.y) * 0.05;
+    camera.lookAt(0, 1, 0);
+
+    // Particle position update (when not fully morphed)
+    if (state.morphProgress < 0.05) {
+      const posAttr = particleGeo.attributes.position;
+      const velAttr = particleGeo.attributes.aVelocity;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3;
+        posAttr.array[i3] += velAttr.array[i3];
+        posAttr.array[i3 + 1] += velAttr.array[i3 + 1];
+        posAttr.array[i3 + 2] += velAttr.array[i3 + 2];
+        // Reset if too far down
+        if (posAttr.array[i3 + 1] < -5) {
+          posAttr.array[i3] = (Math.random() - 0.5) * 10;
+          posAttr.array[i3 + 1] = 12 + Math.random() * 4;
+          posAttr.array[i3 + 2] = -15 + Math.random() * 6;
+        }
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    // Custom cursor update
+    if (!isMobile) {
+      dotPos.x += (mouse.x - dotPos.x) * 0.25;
+      dotPos.y += (mouse.y - dotPos.y) * 0.25;
+      ringPos.x += (mouse.x - ringPos.x) * 0.1;
+      ringPos.y += (mouse.y - ringPos.y) * 0.1;
+
+      cursorDot.style.left = dotPos.x + 'px';
+      cursorDot.style.top = dotPos.y + 'px';
+      cursorRing.style.left = ringPos.x + 'px';
+      cursorRing.style.top = ringPos.y + 'px';
+
+      // Raycasting for panel hover
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hits = raycaster.intersectObjects(panelMeshes);
+      if (hits.length > 0 && !isHoveringPanel) {
+        isHoveringPanel = true;
+        panelMaterial.uniforms.uFresnelIntensity.value = 3.5;
+        bloomPanelMaterial.uniforms.uFresnelIntensity.value = 4.5;
+        cursorRing.style.transform = 'translate(-50%,-50%) scale(1.6)';
+        cursorRing.style.borderColor = '#B3FE85';
+        document.body.style.cursor = 'pointer';
+      } else if (hits.length === 0 && isHoveringPanel) {
+        isHoveringPanel = false;
+        panelMaterial.uniforms.uFresnelIntensity.value = 1.5;
+        bloomPanelMaterial.uniforms.uFresnelIntensity.value = 2.5;
+        cursorRing.style.transform = 'translate(-50%,-50%) scale(1.0)';
+        document.body.style.cursor = 'none';
+      }
+    }
+
+    // Sync bloom scene objects
+    syncBloomObjects();
+    bloomCamera.position.copy(camera.position);
+    bloomCamera.rotation.copy(camera.rotation);
+    bloomCamera.quaternion.copy(camera.quaternion);
+
+    // Render main scene
+    renderer.render(scene, camera);
+
+    // Render bloom scene
+    bloomRenderer.render(bloomScene, bloomCamera);
+  }
+
+  animFrame = requestAnimationFrame(animate);
+
+  // âââ INITIAL ANIMATIONS âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Start panels off-screen
+  panelGroup.position.set(12, -5, 0);
+  sunMesh.position.set(0, -5, -15);
+  bloomSun.position.set(0, -5, -15);
+
+  // Hero entrance (auto-play)
+  gsap.to(panelGroup.position, { x: 3, y: 0, duration: 1.8, ease: 'power3.out', delay: 0.5 });
+  gsap.to(panelGroup.rotation, { y: 0.2, duration: 1.8, ease: 'power3.out', delay: 0.5 });
+  gsap.to(sunMesh.position, { y: 8, duration: 2.2, ease: 'power2.out', delay: 0.3 });
+
+  // âââ CLEANUP âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  window._nexevoCleanup = function() {
+    cancelAnimationFrame(animFrame);
+    window.removeEventListener('resize', onResize);
+    ScrollTrigger.getAll().forEach(t => t.kill());
+    cellGeo.dispose();
+    frameGeo.dispose();
+    panelMaterial.dispose();
+    bloomPanelMaterial.dispose();
+    sunGeo.dispose();
+    sunMat.dispose();
+    bloomSunMat.dispose();
+    particleGeo.dispose();
+    particleMat.dispose();
+    bloomParticleMat.dispose();
+    frameMat.dispose();
+    renderer.dispose();
+    bloomRenderer.dispose();
+  };
+
+}());
+
+</script>
+</body>
+</html>
