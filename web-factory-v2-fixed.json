@@ -1,0 +1,961 @@
+{
+  "name": "ð­ Web Factory Architect v2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "web-factory-brief",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook Brief",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "web-factory-brief"
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-brief",
+              "name": "brief",
+              "value": "={{ $json.body?.brief ?? $json.brief ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-style",
+              "name": "style",
+              "value": "={{ $json.body?.style ?? $json.style ?? 'modern-3d' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-lang",
+              "name": "lang",
+              "value": "={{ $json.body?.lang ?? $json.lang ?? 'it' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Normalizza Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        470,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 8192, system: 'You are Web Factory Architect v2. Given a website brief, produce a JSON blueprint with this structure: { \"meta\": { \"title\": \"string\", \"description\": \"string\", \"palette\": [\"5 hex colors\"], \"fonts\": { \"heading\": \"string\", \"body\": \"string\" }, \"layout\": \"string\" }, \"sections\": [{ \"id\": \"string\", \"type\": \"string\", \"heading\": \"string\", \"subheading\": \"string\", \"content\": \"string\", \"fx\": { \"engine\": \"threejs|spline|gsap|creatify\", \"config\": {} }, \"dependencies\": [\"other section ids\"], \"media\": { \"images\": [{ \"prompt\": \"string\", \"alt\": \"string\" }] } }], \"global\": { \"seo\": {}, \"analytics\": {} } }. Choose the best fx.engine for each section based on the brief requirements. threejs for complex 3D scenes, spline for embedded 3D objects, creatify for video/motion content, gsap for CSS animations. Output ONLY valid JSON, no markdown, no explanation.', messages: [{ role: 'user', content: 'Brief: ' + $json.brief + '\\nStyle: ' + $json.style + '\\nLanguage: ' + $json.lang }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Claude Architect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude response and extract blueprint\nconst response = $input.first().json;\nlet text = '';\n\n// Claude API returns content array\nif (response.content && Array.isArray(response.content)) {\n  text = response.content.map(c => c.text || '').join('');\n} else if (typeof response === 'string') {\n  text = response;\n} else {\n  text = JSON.stringify(response);\n}\n\n// Remove markdown code blocks if present\ntext = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\nlet blueprint;\ntry {\n  blueprint = JSON.parse(text);\n} catch (e) {\n  // Try to find JSON object in text\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    blueprint = JSON.parse(match[0]);\n  } else {\n    throw new Error('Failed to parse blueprint JSON: ' + e.message);\n  }\n}\n\n// Validate required fields\nif (!blueprint.meta) throw new Error('Blueprint missing meta field');\nif (!blueprint.sections || !Array.isArray(blueprint.sections)) {\n  throw new Error('Blueprint missing sections array');\n}\n\n// Flatten image prompts from all sections\nconst imagePrompts = [];\nfor (const section of blueprint.sections) {\n  if (section.media?.images) {\n    for (const img of section.media.images) {\n      imagePrompts.push({\n        sectionId: section.id,\n        prompt: img.prompt,\n        alt: img.alt || img.prompt\n      });\n    }\n  }\n}\n\nreturn [{\n  json: {\n    blueprint,\n    imagePrompts,\n    hasImages: imagePrompts.length > 0\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Valida & Parsing Blueprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        930,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-images",
+              "leftValue": "={{ $json.hasImages }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "IF Genera Immagini AI",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split image prompts into individual items for DALL-E processing\nconst data = $input.first().json;\nconst items = data.imagePrompts.map(ip => ({\n  json: {\n    sectionId: ip.sectionId,\n    prompt: ip.prompt,\n    alt: ip.alt,\n    blueprint: data.blueprint\n  }\n}));\nreturn items;"
+      },
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Split Image Prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'dall-e-3', prompt: $json.prompt, n: 1, size: '1792x1024', quality: 'hd', response_format: 'url' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "DALL-E 3 Generate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1630,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge generated images back into blueprint\nconst items = $input.all();\nlet blueprint = items[0].json.blueprint || $items('Split Image Prompts').first().json.blueprint;\n\n// Deep clone blueprint\nblueprint = JSON.parse(JSON.stringify(blueprint));\n\n// Map generated image URLs back to sections\nfor (const item of items) {\n  const sectionId = item.json.sectionId;\n  const imageUrl = item.json.data?.[0]?.url || item.json.url || '';\n  \n  const section = blueprint.sections.find(s => s.id === sectionId);\n  if (section) {\n    if (!section.media) section.media = {};\n    if (!section.media.generatedImages) section.media.generatedImages = [];\n    section.media.generatedImages.push({\n      url: imageUrl,\n      alt: item.json.alt || ''\n    });\n  }\n}\n\nreturn [{ json: { blueprint } }];"
+      },
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "Merge Immagini Blueprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "empty"
+      },
+      "id": "a1b2c3d4-0009-4000-8000-000000000009",
+      "name": "Merge Paths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Topological sort of sections based on dependencies, then split into items\nconst blueprint = $input.first().json.blueprint;\nconst sections = blueprint.sections;\n\n// Build adjacency and in-degree maps\nconst inDegree = {};\nconst adj = {};\nconst sectionMap = {};\n\nfor (const s of sections) {\n  inDegree[s.id] = 0;\n  adj[s.id] = [];\n  sectionMap[s.id] = s;\n}\n\nfor (const s of sections) {\n  if (s.dependencies && Array.isArray(s.dependencies)) {\n    for (const dep of s.dependencies) {\n      if (adj[dep]) {\n        adj[dep].push(s.id);\n        inDegree[s.id]++;\n      }\n    }\n  }\n}\n\n// Kahn's algorithm for topological sort\nconst queue = [];\nfor (const id in inDegree) {\n  if (inDegree[id] === 0) queue.push(id);\n}\n\nconst sorted = [];\nwhile (queue.length > 0) {\n  const current = queue.shift();\n  sorted.push(current);\n  for (const neighbor of adj[current]) {\n    inDegree[neighbor]--;\n    if (inDegree[neighbor] === 0) queue.push(neighbor);\n  }\n}\n\n// If cycle detected, just use original order\nconst orderedSections = sorted.length === sections.length\n  ? sorted.map(id => sectionMap[id])\n  : sections;\n\n// Split into individual items for the Switch node\nreturn orderedSections.map((section, index) => ({\n  json: {\n    section,\n    sectionIndex: index,\n    totalSections: orderedSections.length,\n    blueprint: { meta: blueprint.meta, global: blueprint.global },\n    fx: section.fx || { engine: 'gsap', config: {} }\n  }\n}));"
+      },
+      "id": "a1b2c3d4-0010-4000-8000-000000000010",
+      "name": "Dependency Resolver & Section Splitter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2330,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.fx.engine }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "threejs",
+              "output": 0
+            },
+            {
+              "value2": "spline",
+              "output": 1
+            },
+            {
+              "value2": "creatify",
+              "output": 2
+            }
+          ]
+        },
+        "fallbackOutput": 3
+      },
+      "id": "a1b2c3d4-0011-4000-8000-000000000011",
+      "name": "Switch FX Engine",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "a1b2c3d4-0012-4000-8000-000000000012",
+      "name": "Wait 2s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        100
+      ],
+      "webhookId": "wait-threejs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, system: 'You are a Three.js expert. Generate a complete, self-contained Three.js scene as a single HTML section based on the provided section spec. Use CDN imports for Three.js. Include lighting, camera, animation loop, and responsive resize handling. Output ONLY the HTML/JS code, no explanation.', messages: [{ role: 'user', content: 'Generate Three.js code for this section:\\n' + JSON.stringify($json.section) + '\\nPalette: ' + JSON.stringify($json.blueprint.meta.palette) + '\\nConfig: ' + JSON.stringify($json.fx.config) }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "id": "a1b2c3d4-0013-4000-8000-000000000013",
+      "name": "Claude Sonnet ThreeJS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3030,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate Spline embed code for the section\nconst section = $json.section;\nconst config = $json.fx.config || {};\nconst splineUrl = config.sceneUrl || config.url || 'https://prod.spline.design/placeholder/scene.splinecode';\n\nconst html = `<section id=\"${section.id}\" class=\"spline-section\" style=\"position:relative;width:100%;min-height:100vh;overflow:hidden;\">\n  <div class=\"spline-container\" style=\"position:absolute;inset:0;z-index:0;\">\n    <iframe src=\"${splineUrl}\" frameborder=\"0\" width=\"100%\" height=\"100%\" style=\"border:none;\" loading=\"lazy\"></iframe>\n  </div>\n  <div class=\"spline-overlay\" style=\"position:relative;z-index:1;padding:4rem 2rem;\">\n    <h2 style=\"font-size:3rem;font-weight:700;\">${section.heading || ''}</h2>\n    ${section.subheading ? '<p style=\"font-size:1.25rem;opacity:0.8;\">' + section.subheading + '</p>' : ''}\n    ${section.content ? '<div class=\"content\">' + section.content + '</div>' : ''}\n  </div>\n</section>`;\n\nreturn [{\n  json: {\n    ...($json),\n    generatedCode: html,\n    codeType: 'html',\n    engine: 'spline'\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0014-4000-8000-000000000014",
+      "name": "Spline Embed Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.pexels.com/videos/search?query={{ encodeURIComponent($json.section.heading || $json.section.type || 'abstract') }}&per_page=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $env.PEXELS_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "a1b2c3d4-0015-4000-8000-000000000015",
+      "name": "Pexels Fetch Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        500
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle Creatify section with Pexels video fallback\nconst section = $json.section || $input.first().json.section;\nconst config = section?.fx?.config || {};\nconst pexelsData = $json.videos || $input.first().json.videos;\n\nlet videoUrl = config.videoUrl || '';\nlet videoSource = 'creatify';\n\n// Use Pexels fallback if available\nif (pexelsData && Array.isArray(pexelsData) && pexelsData.length > 0) {\n  const vid = pexelsData[0];\n  const file = vid.video_files?.find(f => f.quality === 'hd') || vid.video_files?.[0];\n  if (file?.link) {\n    videoUrl = file.link;\n    videoSource = 'pexels';\n  }\n}\n\nconst html = `<section id=\"${section.id}\" class=\"creatify-section\" style=\"position:relative;width:100%;min-height:100vh;overflow:hidden;\">\n  <div class=\"video-bg\" style=\"position:absolute;inset:0;z-index:0;\">\n    <video autoplay muted loop playsinline style=\"width:100%;height:100%;object-fit:cover;\" ${videoUrl ? 'src=\"' + videoUrl + '\"' : ''}>\n      <source src=\"${videoUrl}\" type=\"video/mp4\">\n    </video>\n  </div>\n  <div class=\"video-overlay\" style=\"position:relative;z-index:1;padding:4rem 2rem;background:rgba(0,0,0,0.4);\">\n    <h2 style=\"font-size:3rem;font-weight:700;color:#fff;\">${section.heading || ''}</h2>\n    ${section.subheading ? '<p style=\"font-size:1.25rem;color:rgba(255,255,255,0.8);\">' + section.subheading + '</p>' : ''}\n    ${section.content ? '<div style=\"color:#fff;\">' + section.content + '</div>' : ''}\n  </div>\n</section>`;\n\nreturn [{\n  json: {\n    ...($input.first().json),\n    generatedCode: html,\n    codeType: 'html',\n    engine: 'creatify',\n    videoSource,\n    videoUrl\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0016-4000-8000-000000000016",
+      "name": "Creatify Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3030,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate GSAP/CSS animated section\nconst section = $json.section;\nconst config = $json.fx?.config || {};\nconst palette = $json.blueprint?.meta?.palette || ['#0a0a0a','#1a1a2e','#16213e','#0f3460','#e94560'];\n\nconst animationType = config.animation || 'fadeInUp';\nconst duration = config.duration || 1;\nconst stagger = config.stagger || 0.2;\n\nconst html = `<section id=\"${section.id}\" class=\"gsap-section\" style=\"position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4rem 2rem;background:${palette[0]};color:#fff;overflow:hidden;\">\n  <h2 class=\"gsap-animate\" data-animation=\"${animationType}\" style=\"font-size:3.5rem;font-weight:800;margin-bottom:1rem;opacity:0;\">${section.heading || ''}</h2>\n  ${section.subheading ? '<p class=\"gsap-animate\" data-animation=\"' + animationType + '\" style=\"font-size:1.5rem;opacity:0;margin-bottom:2rem;color:' + palette[4] + ';\">' + section.subheading + '</p>' : ''}\n  ${section.content ? '<div class=\"gsap-animate content\" data-animation=\"' + animationType + '\" style=\"opacity:0;max-width:800px;text-align:center;line-height:1.8;font-size:1.1rem;\">' + section.content + '</div>' : ''}\n</section>\n<script>\n  if (typeof gsap !== \"undefined\" && typeof ScrollTrigger !== \"undefined\") {\n    gsap.registerPlugin(ScrollTrigger);\n    document.querySelectorAll('#${section.id} .gsap-animate').forEach((el, i) => {\n      gsap.fromTo(el,\n        { opacity: 0, y: 60 },\n        { opacity: 1, y: 0, duration: ${duration}, delay: i * ${stagger},\n          scrollTrigger: { trigger: el, start: 'top 80%', toggleActions: 'play none none reverse' }\n        }\n      );\n    });\n  }\n</script>`;\n\nreturn [{\n  json: {\n    ...($json),\n    generatedCode: html,\n    codeType: 'html',\n    engine: 'gsap'\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0017-4000-8000-000000000017",
+      "name": "GSAP CSS Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {
+          "fuzzy": false
+        }
+      },
+      "id": "a1b2c3d4-0018-4000-8000-000000000018",
+      "name": "Merge All Sections",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        3300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble all generated sections into a complete website file structure\nconst items = $input.all();\nconst meta = items[0]?.json?.blueprint?.meta || { title: 'Web Factory Site', palette: ['#0a0a0a','#1a1a2e','#16213e','#0f3460','#e94560'], fonts: { heading: 'Inter', body: 'Inter' } };\n\n// Collect all section HTML\nconst sectionsHtml = items.map(item => item.json.generatedCode || '').join('\\n\\n');\n\n// Check which engines are used\nconst engines = new Set(items.map(item => item.json.engine).filter(Boolean));\n\n// Build CDN links\nconst cdnLinks = [];\nif (engines.has('threejs')) {\n  cdnLinks.push('<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js\"></script>');\n}\nif (engines.has('gsap')) {\n  cdnLinks.push('<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js\"></script>');\n  cdnLinks.push('<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js\"></script>');\n}\n\nconst palette = meta.palette || ['#0a0a0a','#1a1a2e','#16213e','#0f3460','#e94560'];\n\n// Generate index.html\nconst indexHtml = `<!DOCTYPE html>\n<html lang=\"${meta.lang || 'it'}\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>${meta.title || 'Web Factory Site'}</title>\n  <meta name=\"description\" content=\"${meta.description || ''}\">\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n  <link href=\"https://fonts.googleapis.com/css2?family=${encodeURIComponent(meta.fonts?.heading || 'Inter')}:wght@400;700;800&family=${encodeURIComponent(meta.fonts?.body || 'Inter')}:wght@400;500;600&display=swap\" rel=\"stylesheet\">\n  <link rel=\"stylesheet\" href=\"style.css\">\n  ${cdnLinks.join('\\n  ')}\n</head>\n<body>\n  <div id=\"app\">\n${sectionsHtml}\n  </div>\n  <script src=\"main.js\"></script>\n</body>\n</html>`;\n\n// Generate style.css\nconst styleCss = `/* Web Factory v2 â Auto-generated styles */\n:root {\n  --color-bg: ${palette[0]};\n  --color-surface: ${palette[1]};\n  --color-primary: ${palette[2]};\n  --color-secondary: ${palette[3]};\n  --color-accent: ${palette[4]};\n  --font-heading: '${meta.fonts?.heading || 'Inter'}', sans-serif;\n  --font-body: '${meta.fonts?.body || 'Inter'}', sans-serif;\n}\n\n* { margin: 0; padding: 0; box-sizing: border-box; }\nhtml { scroll-behavior: smooth; }\nbody {\n  font-family: var(--font-body);\n  background: var(--color-bg);\n  color: #fff;\n  overflow-x: hidden;\n}\nh1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }\na { color: var(--color-accent); text-decoration: none; }\na:hover { text-decoration: underline; }\nimg, video { max-width: 100%; height: auto; }\n.gsap-section, .spline-section, .creatify-section, .threejs-section {\n  position: relative;\n  width: 100%;\n  min-height: 100vh;\n}\n@media (max-width: 768px) {\n  h2 { font-size: 2rem !important; }\n  p { font-size: 1rem !important; }\n  section { padding: 2rem 1rem !important; }\n}`;\n\n// Generate main.js\nconst mainJs = `// Web Factory v2 â Main JavaScript\ndocument.addEventListener('DOMContentLoaded', () => {\n  console.log('Web Factory v2 â Site loaded');\n\n  // Smooth scroll for anchor links\n  document.querySelectorAll('a[href^=\"#\"]').forEach(anchor => {\n    anchor.addEventListener('click', function(e) {\n      e.preventDefault();\n      const target = document.querySelector(this.getAttribute('href'));\n      if (target) target.scrollIntoView({ behavior: 'smooth' });\n    });\n  });\n\n  // Intersection Observer for lazy animations\n  const observer = new IntersectionObserver((entries) => {\n    entries.forEach(entry => {\n      if (entry.isIntersecting) {\n        entry.target.classList.add('visible');\n      }\n    });\n  }, { threshold: 0.1 });\n\n  document.querySelectorAll('.gsap-animate').forEach(el => observer.observe(el));\n});\n`;\n\n// Generate package.json (for Vercel)\nconst packageJson = JSON.stringify({\n  name: (meta.title || 'web-factory-site').toLowerCase().replace(/[^a-z0-9]+/g, '-'),\n  version: '1.0.0',\n  private: true,\n  description: meta.description || 'Generated by Web Factory v2'\n}, null, 2);\n\n// Generate vercel.json\nconst vercelJson = JSON.stringify({\n  version: 2,\n  builds: [\n    { src: '*.html', use: '@vercel/static' },\n    { src: '*.css', use: '@vercel/static' },\n    { src: '*.js', use: '@vercel/static' }\n  ],\n  routes: [\n    { src: '/(.*)', dest: '/index.html' }\n  ]\n}, null, 2);\n\nreturn [{\n  json: {\n    files: [\n      { path: 'index.html', content: indexHtml },\n      { path: 'style.css', content: styleCss },\n      { path: 'main.js', content: mainJs },\n      { path: 'package.json', content: packageJson },\n      { path: 'vercel.json', content: vercelJson }\n    ],\n    meta,\n    totalFiles: 5\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0019-4000-8000-000000000019",
+      "name": "Code Organizer File Structure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3530,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/user/repos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: ($json.meta.title || 'web-factory-site').toLowerCase().replace(/[^a-z0-9]+/g, '-'), description: 'Generated by Web Factory v2 â ' + ($json.meta.description || ''), private: false, auto_init: true }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0020-4000-8000-000000000020",
+      "name": "GitHub Crea Repository",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3760,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare files for GitHub push â base64 encode all content\nconst prevData = $items('Code Organizer File Structure')[0].json;\nconst repoData = $input.first().json;\n\n// Get repo info â handle both new and existing repos\nconst repoFullName = repoData.full_name || repoData.owner?.login + '/' + repoData.name || '';\nconst owner = repoFullName.split('/')[0] || repoData.owner?.login || '';\nconst repo = repoFullName.split('/')[1] || repoData.name || '';\n\nconst files = prevData.files.map(f => ({\n  path: f.path,\n  content: Buffer.from(f.content, 'utf8').toString('base64'),\n  owner,\n  repo\n}));\n\nreturn files.map(f => ({ json: f }));"
+      },
+      "id": "a1b2c3d4-0021-4000-8000-000000000021",
+      "name": "Prepara File GitHub",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3990,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "a1b2c3d4-0022-4000-8000-000000000022",
+      "name": "SplitInBatches Push",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        4220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $json.owner }}/{{ $json.repo }}/contents/{{ $json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0023-4000-8000-000000000023",
+      "name": "GitHub Check SHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4450,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $json.owner || $items('SplitInBatches Push')[0].json.owner }}/{{ $json.repo || $items('SplitInBatches Push')[0].json.repo }}/contents/{{ $json.path || $items('SplitInBatches Push')[0].json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: 'deploy: ' + ($items('SplitInBatches Push')[0].json.path || $json.path), content: $items('SplitInBatches Push')[0].json.content || $json.content, sha: $json.sha || undefined, branch: 'main' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0024-4000-8000-000000000024",
+      "name": "GitHub Push File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vercel.com/v13/deployments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.VERCEL_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: ($items('Code Organizer File Structure')[0].json.meta.title || 'web-factory-site').toLowerCase().replace(/[^a-z0-9]+/g, '-'), gitSource: { type: 'github', repo: $items('GitHub Crea Repository')[0].json.full_name || '', ref: 'main' }, projectSettings: { framework: null } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0025-4000-8000-000000000025",
+      "name": "Vercel Deploy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Web Factory v2 â Site generated and deployed!', site: { repo: $items('GitHub Crea Repository')[0].json?.html_url || 'N/A', deployment: $json.url || $json.alias?.[0] || 'Deploying...', status: 'deployed' }, meta: $items('Code Organizer File Structure')[0].json.meta, filesDeployed: $items('Code Organizer File Structure')[0].json.totalFiles }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a1b2c3d4-0026-4000-8000-000000000026",
+      "name": "Report Finale",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        5180,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Brief": {
+      "main": [
+        [
+          {
+            "node": "Normalizza Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizza Input": {
+      "main": [
+        [
+          {
+            "node": "Claude Architect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Architect": {
+      "main": [
+        [
+          {
+            "node": "Valida & Parsing Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valida & Parsing Blueprint": {
+      "main": [
+        [
+          {
+            "node": "IF Genera Immagini AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Genera Immagini AI": {
+      "main": [
+        [
+          {
+            "node": "Split Image Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Paths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split Image Prompts": {
+      "main": [
+        [
+          {
+            "node": "DALL-E 3 Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DALL-E 3 Generate": {
+      "main": [
+        [
+          {
+            "node": "Merge Immagini Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Immagini Blueprint": {
+      "main": [
+        [
+          {
+            "node": "Merge Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Paths": {
+      "main": [
+        [
+          {
+            "node": "Dependency Resolver & Section Splitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dependency Resolver & Section Splitter": {
+      "main": [
+        [
+          {
+            "node": "Switch FX Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch FX Engine": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spline Embed Generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pexels Fetch Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GSAP CSS Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s": {
+      "main": [
+        [
+          {
+            "node": "Claude Sonnet ThreeJS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet ThreeJS": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spline Embed Generator": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sections",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Pexels Fetch Video": {
+      "main": [
+        [
+          {
+            "node": "Creatify Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatify Handler": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sections",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "GSAP CSS Handler": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sections",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge All Sections": {
+      "main": [
+        [
+          {
+            "node": "Code Organizer File Structure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Organizer File Structure": {
+      "main": [
+        [
+          {
+            "node": "GitHub Crea Repository",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Crea Repository": {
+      "main": [
+        [
+          {
+            "node": "Prepara File GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara File GitHub": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches Push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches Push": {
+      "main": [
+        [
+          {
+            "node": "Vercel Deploy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GitHub Check SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Check SHA": {
+      "main": [
+        [
+          {
+            "node": "GitHub Push File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Push File": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches Push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vercel Deploy": {
+      "main": [
+        [
+          {
+            "node": "Report Finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-03-02T20:30:00.000Z",
+  "versionId": "v2.0-fixed"
+}
