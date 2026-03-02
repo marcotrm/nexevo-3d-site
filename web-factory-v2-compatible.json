@@ -1,0 +1,400 @@
+{
+  "name": "🏭 Web Factory v2 — Compatible",
+  "nodes": [
+    {
+      "id": "node1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "web-factory",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "web-factory"
+    },
+    {
+      "id": "node2",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "brief",
+              "value": "={{$json.body.brief || $json.brief}}"
+            },
+            {
+              "name": "client_name",
+              "value": "={{$json.body.client_name || $json.client_name || 'Client'}}"
+            },
+            {
+              "name": "project_id",
+              "value": "={{Date.now()}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node3",
+      "name": "Claude Architect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "jsonBody": true,
+        "body": "{\"model\":\"claude-3-opus-20240229\",\"max_tokens\":4096,\"messages\":[{\"role\":\"user\",\"content\":\"You are the ARCHITECT of a world-class website. Your task is to analyze the client brief and create a comprehensive JSON blueprint for a stunning, modern website.\\n\\nCLIENT BRIEF:\\n{{$json.brief}}\\n\\nYour response must be a valid JSON object with this exact structure:\\n{\\n  \\\"project_name\\\": \\\"string\\\",\\n  \\\"brand_colors\\\": {\\n    \\\"primary\\\": \\\"#hex\\\",\\n    \\\"secondary\\\": \\\"#hex\\\",\\n    \\\"accent\\\": \\\"#hex\\\",\\n    \\\"background\\\": \\\"#hex\\\",\\n    \\\"text\\\": \\\"#hex\\\"\\n  },\\n  \\\"typography\\\": {\\n    \\\"heading_font\\\": \\\"Google Font name\\\",\\n    \\\"body_font\\\": \\\"Google Font name\\\"\\n  },\\n  \\\"pages\\\": [\\n    {\\n      \\\"name\\\": \\\"string\\\",\\n      \\\"sections\\\": [\\n        {\\n          \\\"id\\\": \\\"unique-string\\\",\\n          \\\"type\\\": \\\"hero|about|services|portfolio|testimonials|cta|contact|footer|features|stats|team|pricing|faq\\\",\\n          \\\"title\\\": \\\"string\\\",\\n          \\\"description\\\": \\\"detailed description of content and layout\\\",\\n          \\\"style_notes\\\": \\\"specific design direction\\\",\\n          \\\"animations\\\": [\\\"fade-in\\\", \\\"slide-up\\\", \\\"parallax\\\", \\\"typewriter\\\", \\\"counter\\\", \\\"hover-lift\\\"]\\n        }\\n      ]\\n    }\\n  ],\\n  \\\"global_features\\\": [\\\"dark-mode\\\", \\\"smooth-scroll\\\", \\\"scroll-animations\\\", \\\"custom-cursor\\\", \\\"particles\\\"],\\n  \\\"tech_stack\\\": {\\n    \\\"css_framework\\\": \\\"vanilla\\\",\\n    \\\"animation_library\\\": \\\"gsap\\\",\\n    \\\"3d_library\\\": \\\"threejs\\\",\\n    \\\"icons\\\": \\\"phosphor\\\"\\n  }\\n}\\n\\nDesign Principles:\\n- Use modern, bold aesthetics with generous whitespace\\n- Include subtle 3D elements and depth\\n- Plan for scroll-triggered animations\\n- Ensure responsive design considerations\\n- Create cohesive visual language across all sections\\n- Use CSS custom properties for theming\\n\\nReturn ONLY the JSON object, no markdown formatting, no code blocks.\"}]}"
+      }
+    },
+    {
+      "id": "node4",
+      "name": "Parse Blueprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Parse Claude response and extract JSON blueprint\nconst response = $json.content[0].text;\n\n// Extract JSON from response (handle markdown code blocks)\nlet jsonStr = response;\nconst codeBlockMatch = response.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\nif (codeBlockMatch) {\n  jsonStr = codeBlockMatch[1].trim();\n}\n\n// Parse the blueprint\nlet blueprint;\ntry {\n  blueprint = JSON.parse(jsonStr);\n} catch (e) {\n  // Try to find JSON object in text\n  const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    blueprint = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('Could not parse JSON from Claude response');\n  }\n}\n\n// Create flat array of all sections with page context\nconst flatSections = [];\nlet sectionIndex = 0;\n\nfor (const page of blueprint.pages) {\n  for (const section of page.sections) {\n    flatSections.push({\n      ...section,\n      page_name: page.name,\n      section_index: sectionIndex++,\n      total_sections: blueprint.pages.reduce((acc, p) => acc + p.sections.length, 0),\n      brand_colors: blueprint.brand_colors,\n      typography: blueprint.typography,\n      project_name: blueprint.project_name,\n      client_name: $json.client_name,\n      project_id: $json.project_id,\n      global_features: blueprint.global_features || [],\n      tech_stack: blueprint.tech_stack || {}\n    });\n  }\n}\n\nreturn {\n  json: {\n    sections: flatSections,\n    blueprint: blueprint,\n    total_sections: flatSections.length,\n    client_name: $json.client_name,\n    project_id: $json.project_id,\n    project_name: blueprint.project_name\n  }\n};"
+      }
+    },
+    {
+      "id": "node5",
+      "name": "Split Sections",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "node6",
+      "name": "Rate Limit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "parameters": {
+        "resume": "afterTimeInterval",
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "webhookId": "wait-rate-limit"
+    },
+    {
+      "id": "node7",
+      "name": "Claude Builder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1450,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "jsonBody": true,
+        "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"max_tokens\":4096,\"messages\":[{\"role\":\"user\",\"content\":\"You are the BUILDER. Generate production-ready HTML, CSS, and JavaScript for a single website section.\\n\\nSECTION DETAILS:\\n- Section ID: {{$json.id}}\\n- Section Type: {{$json.type}}\\n- Page: {{$json.page_name}}\\n- Title: {{$json.title}}\\n- Description: {{$json.description}}\\n- Style Notes: {{$json.style_notes}}\\n- Animations: {{JSON.stringify($json.animations)}}\\n\\nBRAND COLORS:\\n{{JSON.stringify($json.brand_colors)}}\\n\\nTYPOGRAPHY:\\n{{JSON.stringify($json.typography)}}\\n\\nPROJECT: {{$json.project_name}}\\nCLIENT: {{$json.client_name}}\\n\\nSECTION INDEX: {{$json.section_index}} of {{$json.total_sections}}\\n\\nGenerate ONLY the HTML for this section. Include:\\n1. Semantic HTML5 structure with data-section-id attribute\\n2. Inline CSS using CSS custom properties matching brand colors\\n3. GSAP animations for scroll triggers and interactions\\n4. Three.js 3D effects if appropriate for the section type\\n5. Responsive design with mobile breakpoints\\n6. Phosphor icons (use SVG inline or CDN)\\n\\nThe HTML should be a complete section element that can be inserted into a page.\\n\\nReturn ONLY the HTML code, no markdown formatting, no explanations.\"}]}"
+      }
+    },
+    {
+      "id": "node8",
+      "name": "Assemble HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Collect all section HTML responses and assemble complete index.html\nconst allItems = $input.all();\nconst firstItem = allItems[0].json;\n\n// Extract HTML from each Claude response\nconst sections = allItems.map((item, idx) => {\n  const response = item.json.content[0].text;\n  // Extract HTML from code blocks if present\n  let html = response;\n  const codeBlockMatch = response.match(/```(?:html)?\\s*([\\s\\S]*?)```/);\n  if (codeBlockMatch) {\n    html = codeBlockMatch[1].trim();\n  }\n  return {\n    html: html,\n    section_id: firstItem.sections[idx]?.id || `section-${idx}`,\n    section_type: firstItem.sections[idx]?.type || 'generic'\n  };\n});\n\n// Get brand colors from first section\nconst brandColors = firstItem.sections[0]?.brand_colors || {\n  primary: '#6366f1',\n  secondary: '#8b5cf6',\n  accent: '#ec4899',\n  background: '#0f0f23',\n  text: '#ffffff'\n};\n\nconst typography = firstItem.sections[0]?.typography || {\n  heading_font: 'Inter',\n  body_font: 'Inter'\n};\n\nconst projectName = firstItem.project_name || 'Website';\nconst clientName = firstItem.client_name || 'Client';\n\n// Assemble complete HTML document\nconst completeHTML = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>${projectName} | ${clientName}</title>\n  <meta name=\"description\" content=\"${projectName} - A stunning website created by Web Factory\">\n  \n  <!-- Google Fonts -->\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n  <link href=\"https://fonts.googleapis.com/css2?family=${typography.heading_font.replace(/\\s/g, '+')}:wght@400;500;600;700;800&family=${typography.body_font.replace(/\\s/g, '+')}:wght@300;400;500;600&display=swap\" rel=\"stylesheet\">\n  \n  <!-- GSAP -->\n  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js\"></script>\n  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js\"></script>\n  \n  <!-- Three.js -->\n  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\"></script>\n  \n  <!-- Phosphor Icons -->\n  <script src=\"https://unpkg.com/@phosphor-icons/web\"></script>\n  \n  <style>\n    :root {\n      --color-primary: ${brandColors.primary};\n      --color-secondary: ${brandColors.secondary};\n      --color-accent: ${brandColors.accent};\n      --color-bg: ${brandColors.background};\n      --color-text: ${brandColors.text};\n      --font-heading: '${typography.heading_font}', sans-serif;\n      --font-body: '${typography.body_font}', sans-serif;\n      --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);\n    }\n    \n    * {\n      margin: 0;\n      padding: 0;\n      box-sizing: border-box;\n    }\n    \n    html {\n      scroll-behavior: smooth;\n    }\n    \n    body {\n      font-family: var(--font-body);\n      background: var(--color-bg);\n      color: var(--color-text);\n      line-height: 1.6;\n      overflow-x: hidden;\n    }\n    \n    h1, h2, h3, h4, h5, h6 {\n      font-family: var(--font-heading);\n      font-weight: 700;\n      line-height: 1.2;\n    }\n    \n    a {\n      color: var(--color-primary);\n      text-decoration: none;\n      transition: color 0.3s var(--transition-smooth);\n    }\n    \n    a:hover {\n      color: var(--color-accent);\n    }\n    \n    img {\n      max-width: 100%;\n      height: auto;\n    }\n    \n    .container {\n      max-width: 1400px;\n      margin: 0 auto;\n      padding: 0 2rem;\n    }\n    \n    @media (max-width: 768px) {\n      .container {\n        padding: 0 1rem;\n      }\n    }\n    \n    /* Scrollbar styling */\n    ::-webkit-scrollbar {\n      width: 8px;\n    }\n    \n    ::-webkit-scrollbar-track {\n      background: var(--color-bg);\n    }\n    \n    ::-webkit-scrollbar-thumb {\n      background: var(--color-primary);\n      border-radius: 4px;\n    }\n    \n    ::-webkit-scrollbar-thumb:hover {\n      background: var(--color-secondary);\n    }\n  </style>\n</head>\n<body>\n  ${sections.map(s => s.html).join('\\n\\n')}\n  \n  <script>\n    // Initialize GSAP ScrollTrigger\n    gsap.registerPlugin(ScrollTrigger);\n    \n    // Global smooth scroll behavior\n    document.querySelectorAll('a[href^=\"#\"]').forEach(anchor => {\n      anchor.addEventListener('click', function(e) {\n        e.preventDefault();\n        const target = document.querySelector(this.getAttribute('href'));\n        if (target) {\n          target.scrollIntoView({ behavior: 'smooth' });\n        }\n      });\n    });\n    \n    // Initialize all section animations\n    document.querySelectorAll('[data-section-id]').forEach(section => {\n      const sectionId = section.getAttribute('data-section-id');\n      \n      // Fade in animation\n      gsap.fromTo(section, \n        { opacity: 0, y: 30 },\n        {\n          opacity: 1,\n          y: 0,\n          duration: 0.8,\n          ease: 'power2.out',\n          scrollTrigger: {\n            trigger: section,\n            start: 'top 80%',\n            toggleActions: 'play none none reverse'\n          }\n        }\n      );\n    });\n  </script>\n</body>\n</html>`;\n\nreturn {\n  json: {\n    html: completeHTML,\n    project_name: projectName,\n    client_name: clientName,\n    project_id: firstItem.project_id,\n    total_sections: sections.length,\n    repo: 'marcotrm/nexevo-3d-site'\n  }\n};"
+      }
+    },
+    {
+      "id": "node9",
+      "name": "Check File Exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1850,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/marcotrm/nexevo-3d-site/contents/index.html",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.GITHUB_TOKEN}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node10",
+      "name": "Prepare File Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Prepare file data for GitHub API\nconst html = $json.html;\nconst projectName = $json.project_name;\nconst clientName = $json.client_name;\nconst projectId = $json.project_id;\n\n// Check if file exists (from previous node)\nlet sha = null;\ntry {\n  // If the GET request succeeded, it will have a sha\n  sha = $input.first().json.sha;\n} catch (e) {\n  // File doesn't exist, sha remains null\n}\n\n// Base64 encode the HTML\nconst base64Content = Buffer.from(html).toString('base64');\n\nreturn {\n  json: {\n    content: base64Content,\n    sha: sha,\n    message: `🚀 Deploy ${projectName} for ${clientName} (Project: ${projectId})`,\n    project_name: projectName,\n    client_name: clientName,\n    project_id: projectId\n  }\n};"
+      }
+    },
+    {
+      "id": "node11",
+      "name": "Push to GitHub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2250,
+        300
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/marcotrm/nexevo-3d-site/contents/index.html",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.GITHUB_TOKEN}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "jsonBody": true,
+        "body": "{\"message\":\"{{$json.message}}\",\"content\":\"{{$json.content}}\",\"sha\":\"{{$json.sha}}\"}"
+      }
+    },
+    {
+      "id": "node12",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2450,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "{\"success\":true,\"message\":\"Website generated and deployed successfully!\",\"project_name\":\"{{$json.project_name}}\",\"client_name\":\"{{$json.client_name}}\",\"project_id\":\"{{$json.project_id}}\",\"github_url\":\"https://github.com/marcotrm/nexevo-3d-site\",\"github_pages_url\":\"https://marcotrm.github.io/nexevo-3d-site/\",\"timestamp\":\"{{Date.now()}}\"}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Claude Architect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Architect": {
+      "main": [
+        [
+          {
+            "node": "Parse Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Blueprint": {
+      "main": [
+        [
+          {
+            "node": "Split Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Sections": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Claude Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Builder": {
+      "main": [
+        [
+          {
+            "node": "Assemble HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble HTML": {
+      "main": [
+        [
+          {
+            "node": "Check File Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check File Exists": {
+      "main": [
+        [
+          {
+            "node": "Prepare File Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare File Data": {
+      "main": [
+        [
+          {
+            "node": "Push to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push to GitHub": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "web-factory-compatible"
+}
